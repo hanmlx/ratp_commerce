@@ -204,25 +204,116 @@ def main():
             coords_valides = df.dropna(subset=['latitude', 'longitude']).shape[0] if has_coords else 0
             st.metric("Coordonnées valides", coords_valides)
         
-        # Graphiques statistiques
+        # Graphiques univariés
+        st.subheader("📊 Analyses univariées")
+        
         if not df.empty:
-            type_col = 'type_commerce' if 'type_commerce' in df.columns else 'commerce'
+            type_col = 'tco_libelle' if 'tco_libelle' in df.columns else 'commerce' if 'commerce' in df.columns else 'type_commerce'
+            
+            # Analyse des types de commerce
             if type_col in df.columns:
+                st.write("**Répartition des types de commerce**")
                 type_counts = df[type_col].value_counts().reset_index()
                 type_counts.columns = ['type_commerce', 'nombre']
                 
-                fig_types = px.bar(type_counts.head(10), x='type_commerce', y='nombre',
-                                  title="Top 10 des types de commerce")
-                st.plotly_chart(fig_types, use_container_width=True)
+                col1, col2 = st.columns(2)
+                with col1:
+                    # Graphique en barres
+                    fig_bar = px.bar(type_counts.head(10), x='type_commerce', y='nombre',
+                                   title="Top 10 - Barres")
+                    st.plotly_chart(fig_bar, use_container_width=True)
+                
+                with col2:
+                    # Graphique circulaire
+                    fig_pie = px.pie(type_counts.head(8), values='nombre', names='type_commerce',
+                                    title="Top 8 - Camembert")
+                    st.plotly_chart(fig_pie, use_container_width=True)
+                
+                # Histogramme
+                fig_hist = px.histogram(type_counts, x='nombre', nbins=20,
+                                     title="Distribution des fréquences")
+                st.plotly_chart(fig_hist, use_container_width=True)
             
+            # Analyse des communes
             commune_col = 'commune' if 'commune' in df.columns else 'dea_commune_livraison'
             if commune_col in df.columns:
+                st.write("**Répartition par commune**")
                 commune_counts = df[commune_col].value_counts().reset_index()
                 commune_counts.columns = ['commune', 'nombre']
                 
-                fig_communes = px.bar(commune_counts.head(10), x='commune', y='nombre',
-                                     title="Top 10 des communes")
-                st.plotly_chart(fig_communes, use_container_width=True)
+                col1, col2 = st.columns(2)
+                with col1:
+                    # Barres horizontales
+                    fig_hbar = px.bar(commune_counts.head(10), x='nombre', y='commune',
+                                     orientation='h', title="Top 10 - Barres horizontales")
+                    st.plotly_chart(fig_hbar, use_container_width=True)
+                
+                with col2:
+                    # Nuage de points
+                    fig_scatter = px.scatter(commune_counts.head(15), x=range(len(commune_counts.head(15))), 
+                                          y='nombre', hover_name='commune',
+                                          title="Distribution - Nuage de points")
+                    st.plotly_chart(fig_scatter, use_container_width=True)
+        
+        # Graphiques bivariés
+        st.subheader("📈 Analyses bivariées")
+        
+        if not df.empty and type_col in df.columns and commune_col in df.columns:
+            # Croisement types de commerce vs communes
+            st.write("**Types de commerce par commune**")
+            
+            # Top 10 des communes pour l'analyse
+            top_communes = df[commune_col].value_counts().head(10).index.tolist()
+            df_top = df[df[commune_col].isin(top_communes)]
+            
+            # Graphique en barres groupées
+            cross_tab = pd.crosstab(df_top[type_col], df_top[commune_col])
+            fig_grouped = px.bar(cross_tab.reset_index().melt(id_vars=[type_col]), 
+                               x=type_col, y='value', color='commune',
+                               title="Types de commerce par commune (Top 10)")
+            fig_grouped.update_layout(xaxis_tickangle=-45)
+            st.plotly_chart(fig_grouped, use_container_width=True)
+            
+            # Heatmap
+            fig_heatmap = px.imshow(cross_tab, 
+                                  title="Heatmap - Types de commerce vs Communes",
+                                  labels=dict(x="Commune", y="Type de commerce", color="Nombre"))
+            st.plotly_chart(fig_heatmap, use_container_width=True)
+            
+            # Box plot
+            col1, col2 = st.columns(2)
+            with col1:
+                # Distribution par commune
+                box_data = df.groupby(commune_col).size().reset_index(name='count')
+                fig_box = px.box(box_data, y='count', 
+                               title="Distribution du nombre de commerces par commune")
+                st.plotly_chart(fig_box, use_container_width=True)
+            
+            with col2:
+                # Distribution par type de commerce
+                box_data_type = df.groupby(type_col).size().reset_index(name='count')
+                fig_box_type = px.box(box_data_type, y='count',
+                                     title="Distribution du nombre de commerces par type")
+                st.plotly_chart(fig_box_type, use_container_width=True)
+        
+        # Analyses temporelles si données disponibles
+        if 'date_creation' in df.columns or 'date' in df.columns:
+            st.write("**Analyses temporelles**")
+            date_col = 'date_creation' if 'date_creation' in df.columns else 'date'
+            if date_col in df.columns:
+                df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+                df_temp = df.dropna(subset=[date_col])
+                
+                if not df_temp.empty:
+                    # Évolution temporelle
+                    df_temp['mois'] = df_temp[date_col].dt.to_period('M').astype(str)
+                    monthly_counts = df_temp['mois'].value_counts().sort_index().reset_index()
+                    monthly_counts.columns = ['mois', 'nombre']
+                    
+                    fig_time = px.line(monthly_counts, x='mois', y='nombre',
+                                    title="Évolution temporelle des commerces")
+                    fig_time.update_xaxis(tickangle=45)
+                    st.plotly_chart(fig_time, use_container_width=True)
     
     elif page_choisie == "🗺️ Distribution géographique":
         st.subheader("Distribution géographique")
@@ -319,4 +410,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
