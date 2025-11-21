@@ -229,31 +229,8 @@ def main():
                                     title="Top 8 - Camembert")
                     st.plotly_chart(fig_pie, use_container_width=True)
                 
-                # Histogramme
-                fig_hist = px.histogram(type_counts, x='nombre', nbins=20,
-                                     title="Distribution des fréquences")
-                st.plotly_chart(fig_hist, use_container_width=True)
             
-            # Analyse des communes
-            commune_col = 'commune' if 'commune' in df.columns else 'dea_commune_livraison'
-            if commune_col in df.columns:
-                st.write("**Répartition par commune**")
-                commune_counts = df[commune_col].value_counts().reset_index()
-                commune_counts.columns = ['commune', 'nombre']
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    # Barres horizontales
-                    fig_hbar = px.bar(commune_counts.head(10), x='nombre', y='commune',
-                                     orientation='h', title="Top 10 - Barres horizontales")
-                    st.plotly_chart(fig_hbar, use_container_width=True)
-                
-                with col2:
-                    # Nuage de points
-                    fig_scatter = px.scatter(commune_counts.head(15), x=range(len(commune_counts.head(15))), 
-                                          y='nombre', hover_name='commune',
-                                          title="Distribution - Nuage de points")
-                    st.plotly_chart(fig_scatter, use_container_width=True)
+
         
         # Graphiques bivariés
         st.subheader("📈 Analyses bivariées")
@@ -280,21 +257,7 @@ def main():
                                   labels=dict(x="Commune", y="Type de commerce", color="Nombre"))
             st.plotly_chart(fig_heatmap, use_container_width=True)
             
-            # Box plot
-            col1, col2 = st.columns(2)
-            with col1:
-                # Distribution par commune
-                box_data = df.groupby(commune_col).size().reset_index(name='count')
-                fig_box = px.box(box_data, y='count', 
-                               title="Distribution du nombre de commerces par commune")
-                st.plotly_chart(fig_box, use_container_width=True)
-            
-            with col2:
-                # Distribution par type de commerce
-                box_data_type = df.groupby(type_col).size().reset_index(name='count')
-                fig_box_type = px.box(box_data_type, y='count',
-                                     title="Distribution du nombre de commerces par type")
-                st.plotly_chart(fig_box_type, use_container_width=True)
+
         
         # Analyses temporelles si données disponibles
         if 'date_creation' in df.columns or 'date' in df.columns:
@@ -401,11 +364,28 @@ def main():
     # Informations dans la barre latérale
     st.sidebar.markdown("---")
     st.sidebar.subheader("ℹ️ À propos")
-    st.sidebar.info("""
+    
+    # Afficher la date actuelle
+    date_actuelle = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    
+    st.sidebar.info(f"""
     **Source des données:** API Open Data RATP  
     **Jeu de données:** Commerces de proximité agréés RATP  
-    **Dernière mise à jour:** Données en temps réel  
-    **URL API:** data.ratp.fr
+    **Dernière synchronisation:** {date_actuelle}  
+    **Fréquence de mise à jour:** Données en temps réel  
+    **URL API:** https://data.ratp.fr  
+    **Format:** JSON via API REST  
+    **Limite API:** 100 enregistrements par requête  
+    **Total disponible:** Variable selon l'API
+    """)
+    
+    # Informations techniques supplémentaires
+    st.sidebar.markdown("**📊 Informations techniques:**")
+    st.sidebar.write(f"""
+    • Enregistrements chargés: {len(df)}
+    • Colonnes disponibles: {len(df.columns)}
+    • Cache: 1 heure (TTL: 3600s)
+    • Mode: Pagination automatique
     """)
 
 if __name__ == "__main__":
