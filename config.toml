@@ -1,0 +1,15 @@
+[theme]
+base = "light"
+backgroundColor = "rgba(162, 233, 221, 0.08)"    # 0.0 = transparent, 1.0 = opaque
+secondaryBackgroundColor="darkSeaGreen"
+codeBackgroundColor = "#e6f7fa"       # bleu très clair pour le code
+primaryColor = "#4bc0ad"              # vert-bleu clair du logo
+accentColor = "#4bc0ad"               # vert-bleu clair pour accents
+textColor = "#004fa3"                          # bleu foncé pour le texte
+font = "sans serif"
+legendColor = "#2a6fbd"
+
+
+[theme.sidebar]
+backgroundColor= "#ffffff"
+secondaryBackgroundColor="lavender"
