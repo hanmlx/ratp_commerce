@@ -138,6 +138,9 @@ def extract_coordinates(df):
 
 # Application principale
 def main():
+    # Affiche le logo sur toutes les pages
+    st.sidebar.image("src/logo.svg", width=120, output_format="SVG")  # Centré et taille contrôlée
+    
     # Chargement des données
     with st.spinner('Chargement des données depuis l\'API RATP...'):
         df = load_data_from_api()
